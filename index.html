@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>File Splitter & Joiner</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117; color: #e6edf3;
+            min-height: 100vh; padding: 12px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { max-width: 520px; margin: 0 auto; }
+        
+        /* ═══ HEADER ═══ */
+        header { text-align: center; padding: 8px 0 16px; }
+        header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        header .subtitle { font-size: 12px; color: #7d8590; }
+        
+        /* ═══ TABS ═══ */
+        .tabs {
+            display: flex; background: #161b22; border-radius: 10px;
+            padding: 4px; margin-bottom: 16px; gap: 4px;
+        }
+        .tab {
+            flex: 1; padding: 10px; text-align: center;
+            font-size: 13px; font-weight: 600; color: #7d8590;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .tab.active { background: #21262d; color: #58a6ff; }
+        
+        /* ═══ CARD ═══ */
+        .card {
+            background: #161b22; border: 1px solid #30363d;
+            border-radius: 12px; padding: 16px; margin-bottom: 12px;
+        }
+        .label { font-size: 12px; font-weight: 600; color: #7d8590;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        
+        /* ═══ FILE INPUT ═══ */
+        .file-picker {
+            display: block; padding: 24px 16px; text-align: center;
+            background: #0d1117; border: 2px dashed #30363d;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .file-picker:active { border-color: #58a6ff; background: #0a0e14; }
+        .file-picker .icon { font-size: 32px; margin-bottom: 8px; }
+        .file-picker .title { font-size: 13px; font-weight: 600; color: #58a6ff; }
+        .file-picker .hint { font-size: 11px; color: #7d8590; margin-top: 4px; }
+        input[type="file"] { display: none; }
+        
+        /* ═══ FILE INFO ═══ */
+        .file-info {
+            margin-top: 12px; padding: 12px;
+            background: #0d1117; border: 1px solid #30363d;
+            border-radius: 8px; font-size: 12px;
+        }
+        .file-info .row { display: flex; justify-content: space-between; padding: 4px 0; }
+        .file-info .row .k { color: #7d8590; }
+        .file-info .row .v { color: #e6edf3; font-weight: 600; text-align: right; max-width: 60%; word-break: break-all; }
+        
+        /* ═══ MODE TOGGLE ═══ */
+        .mode-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+        .mode-btn {
+            flex: 1; padding: 8px; background: #0d1117;
+            border: 1px solid #30363d; border-radius: 8px;
+            font-size: 12px; color: #7d8590; cursor: pointer;
+            transition: all 0.15s; font-weight: 600;
+        }
+        .mode-btn.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+        
+        /* ═══ INPUT ═══ */
+        .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        input[type="number"] {
+            flex: 1; padding: 12px; background: #0d1117;
+            border: 1px solid #30363d; border-radius: 8px;
+            color: #e6edf3; font-size: 15px; font-weight: 600;
+            outline: none; transition: border 0.15s;
+        }
+        input[type="number"]:focus { border-color: #58a6ff; }
+        select {
+            padding: 12px; background: #0d1117;
+            border: 1px solid #30363d; border-radius: 8px;
+            color: #e6edf3; font-size: 15px; font-weight: 600;
+            outline: none;
+        }
+        
+        /* ═══ PRESETS ═══ */
+        .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .preset {
+            padding: 6px 12px; background: #21262d;
+            border: 1px solid #30363d; border-radius: 16px;
+            font-size: 11px; color: #7d8590; cursor: pointer;
+            font-weight: 600; transition: all 0.15s;
+        }
+        .preset:active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+        
+        /* ═══ BUTTON ═══ */
+        .btn {
+            width: 100%; padding: 14px;
+            background: #238636; border: none; border-radius: 10px;
+            color: #fff; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { background: #2ea043; }
+        .btn:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+        .btn.danger { background: #da3633; }
+        .btn.danger:active { background: #f85149; }
+        
+        /* ═══ PROGRESS ═══ */
+        .progress-wrap { margin-top: 12px; display: none; }
+        .progress-bar {
+            height: 8px; background: #21262d; border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, #1f6feb, #58a6ff);
+            width: 0%; transition: width 0.15s;
+        }
+        .progress-text { font-size: 11px; color: #7d8590;
+            text-align: center; margin-top: 6px; font-weight: 600; }
+        
+        /* ═══ RESULTS ═══ */
+        .results { margin-top: 12px; }
+        .results-header {
+            font-size: 12px; color: #7d8590;
+            margin-bottom: 8px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .part-link {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 12px 14px;
+            background: #0d1117; border: 1px solid #30363d;
+            border-radius: 8px; margin-bottom: 6px;
+            text-decoration: none; color: #e6edf3;
+            font-size: 12px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .part-link:active { background: #1f6feb; border-color: #1f6feb; }
+        .part-link .left { display: flex; align-items: center; gap: 10px; }
+        .part-link .num {
+            background: #21262d; color: #58a6ff;
+            padding: 3px 8px; border-radius: 6px;
+            font-size: 10px; font-weight: 700; min-width: 36px; text-align: center;
+        }
+        .part-link .name { font-weight: 600; max-width: 180px; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap; }
+        .part-link .size { color: #7d8590; font-size: 10px; font-weight: 600; }
+        
+        /* ═══ TOAST ═══ */
+        #toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #21262d; color: #e6edf3;
+            padding: 12px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border: 1px solid #30363d;
+            transition: transform 0.3s ease;
+            z-index: 9999; max-width: 90vw;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        #toast.success { border-color: #238636; }
+        #toast.error { border-color: #da3633; }
+        #toast.warning { border-color: #d29922; }
+        
+        .note {
+            font-size: 11px; color: #7d8590; line-height: 1.5;
+            padding: 10px 12px; background: #0d1117;
+            border-radius: 8px; border-left: 3px solid #1f6feb;
+            margin-top: 12px;
+        }
+        .note strong { color: #e6edf3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>📦 File Splitter</h1>
+        <div class="subtitle">Potong & gabung file, murni di browser</div>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" id="tab-split" onclick="switchTab('split')">✂️ Potong</div>
+        <div class="tab" id="tab-join" onclick="switchTab('join')">🔗 Gabung</div>
+    </div>
+
+    <!-- ═══ SPLIT PANEL ═══ -->
+    <div id="panel-split">
+        <div class="card">
+            <div class="label">1. Pilih file</div>
+            <label for="fileInput" class="file-picker" id="filePicker">
+                <div class="icon">📂</div>
+                <div class="title">Tap untuk pilih file</div>
+                <div class="hint">File apa saja — bisa besar</div>
+            </label>
+            <input type="file" id="fileInput">
+            <div class="file-info" id="splitFileInfo" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <div class="label">2. Cara potong</div>
+            <div class="mode-toggle">
+                <div class="mode-btn active" id="modeBySize" onclick="setMode('size')">📏 Per ukuran</div>
+                <div class="mode-btn" id="modeByCount" onclick="setMode('count')">🎯 Per jumlah</div>
+            </div>
+
+            <div id="modeSizePanel">
+                <div class="input-row">
+                    <input type="number" id="sizeValue" value="50" min="0.1" step="0.1">
+                    <select id="sizeUnit">
+                        <option value="KB">KB</option>
+                        <option value="MB" selected>MB</option>
+                        <option value="GB">GB</option>
+                    </select>
+                </div>
+                <div class="presets">
+                    <div class="preset" onclick="applyPreset(10, 'MB')">10 MB</div>
+                    <div class="preset" onclick="applyPreset(20, 'MB')">20 MB</div>
+                    <div class="preset" onclick="applyPreset(50, 'MB')">50 MB</div>
+                    <div class="preset" onclick="applyPreset(100, 'MB')">100 MB</div>
+                    <div class="preset" onclick="applyPreset(500, 'MB')">500 MB</div>
+                    <div class="preset" onclick="applyPreset(1, 'GB')">1 GB</div>
+                </div>
+            </div>
+
+            <div id="modeCountPanel" style="display:none;">
+                <div class="input-row">
+                    <input type="number" id="countValue" value="4" min="2" max="1000" step="1">
+                </div>
+                <div class="presets">
+                    <div class="preset" onclick="applyCountPreset(2)">2 bagian</div>
+                    <div class="preset" onclick="applyCountPreset(3)">3 bagian</div>
+                    <div class="preset" onclick="applyCountPreset(4)">4 bagian</div>
+                    <div class="preset" onclick="applyCountPreset(5)">5 bagian</div>
+                    <div class="preset" onclick="applyCountPreset(10)">10 bagian</div>
+                </div>
+            </div>
+
+            <div class="file-info" id="previewInfo" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <button class="btn" id="btnSplit" onclick="splitFile()" disabled>✂️ Potong File</button>
+            <div class="progress-wrap" id="splitProgressWrap">
+                <div class="progress-bar"><div class="progress-fill" id="splitProgressFill"></div></div>
+                <div class="progress-text" id="splitProgressText">0%</div>
+            </div>
+        </div>
+
+        <div id="splitResults" class="results"></div>
+
+        <div class="note" id="splitNote" style="display:none;">
+            <strong>💡 Cara gabung kembali:</strong><br>
+            <b>Termux/Linux:</b> <code>cat file.mp4.part* &gt; file.mp4</code><br>
+            <b>Windows:</b> <code>copy /b file.mp4.part* file.mp4</code><br>
+            <b>Cara termudah:</b> pakai tab <b>Gabung</b> di aplikasi ini.
+        </div>
+    </div>
+
+    <!-- ═══ JOIN PANEL ═══ -->
+    <div id="panel-join" style="display:none;">
+        <div class="card">
+            <div class="label">1. Pilih semua bagian</div>
+            <label for="joinInput" class="file-picker" id="joinPicker">
+                <div class="icon">🔗</div>
+                <div class="title">Tap untuk pilih .part files</div>
+                <div class="hint">Pilih SEMUA bagian sekaligus (multi-select)</div>
+            </label>
+            <input type="file" id="joinInput" multiple>
+            <div class="file-info" id="joinFileInfo" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <button class="btn" id="btnJoin" onclick="joinFiles()" disabled>🔗 Gabung & Unduh</button>
+            <div class="progress-wrap" id="joinProgressWrap">
+                <div class="progress-bar"><div class="progress-fill" id="joinProgressFill"></div></div>
+                <div class="progress-text" id="joinProgressText">0%</div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>💡 Tips:</strong><br>
+            • Pilih semua file <code>.part001</code>, <code>.part002</code>, dst <b>sekaligus</b><br>
+            • Aplikasi akan urutkan otomatis berdasarkan nomor<br>
+            • Hasil gabungan bisa langsung diunduh
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentTab = 'split';
+let currentMode = 'size';   // 'size' atau 'count'
+let activeUrls = [];        // untuk revoke blob URL
+
+// ═══════════════════════════════════════════════════════
+// UTIL
+// ═══════════════════════════════════════════════════════
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+
+function unitToBytes(value, unit) {
+    const v = parseFloat(value);
+    if (!v || v <= 0 || isNaN(v)) return 0;
+    switch (unit) {
+        case 'KB': return v * 1024;
+        case 'MB': return v * 1024 * 1024;
+        case 'GB': return v * 1024 * 1024 * 1024;
+        default:   return 0;
+    }
+}
+
+function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = type + ' show';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = type; }, 2500);
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-split').classList.toggle('active', tab === 'split');
+    document.getElementById('tab-join').classList.toggle('active', tab === 'join');
+    document.getElementById('panel-split').style.display = tab === 'split' ? 'block' : 'none';
+    document.getElementById('panel-join').style.display = tab === 'join' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// SPLIT MODE
+// ═══════════════════════════════════════════════════════
+function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('modeBySize').classList.toggle('active', mode === 'size');
+    document.getElementById('modeByCount').classList.toggle('active', mode === 'count');
+    document.getElementById('modeSizePanel').style.display = mode === 'size' ? 'block' : 'none';
+    document.getElementById('modeCountPanel').style.display = mode === 'count' ? 'block' : 'none';
+    updatePreview();
+}
+
+function applyPreset(value, unit) {
+    document.getElementById('sizeValue').value = value;
+    document.getElementById('sizeUnit').value = unit;
+    updatePreview();
+}
+
+function applyCountPreset(n) {
+    document.getElementById('countValue').value = n;
+    updatePreview();
+}
+
+// ═══════════════════════════════════════════════════════
+// FILE PICKER — SPLIT
+// ═══════════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const info = document.getElementById('splitFileInfo');
+    info.style.display = 'block';
+    info.innerHTML = `
+        <div class="row"><span class="k">Nama</span><span class="v">${escapeHtml(file.name)}</span></div>
+        <div class="row"><span class="k">Ukuran</span><span class="v">${formatSize(file.size)}</span></div>
+        <div class="row"><span class="k">Tipe</span><span class="v">${escapeHtml(file.type || 'tidak diketahui')}</span></div>
+    `;
+
+    document.getElementById('filePicker').querySelector('.title').innerText = file.name;
+    document.getElementById('filePicker').querySelector('.hint').innerText = formatSize(file.size);
+    document.getElementById('btnSplit').disabled = false;
+    updatePreview();
+});
+
+// ═══════════════════════════════════════════════════════
+// PREVIEW — hitung chunk sebelum split
+// ═══════════════════════════════════════════════════════
+function updatePreview() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    const preview = document.getElementById('previewInfo');
+    if (!file) { preview.style.display = 'none'; return; }
+
+    let chunkSize, numParts;
+    if (currentMode === 'size') {
+        const value = document.getElementById('sizeValue').value;
+        const unit = document.getElementById('sizeUnit').value;
+        chunkSize = unitToBytes(value, unit);
+        if (chunkSize <= 0) {
+            preview.style.display = 'none';
+            return;
+        }
+        numParts = Math.ceil(file.size / chunkSize);
+    } else {
+        const count = parseInt(document.getElementById('countValue').value);
+        if (!count || count < 2) {
+            preview.style.display = 'none';
+            return;
+        }
+        numParts = count;
+        chunkSize = Math.ceil(file.size / count);
+    }
+
+    const actualChunkSize = numParts === 1 ? file.size : Math.ceil(file.size / numParts);
+    const lastPartSize = file.size - actualChunkSize * (numParts - 1);
+
+    let warning = '';
+    if (numParts < 2) warning = '<span style="color:#d29922">⚠️ File lebih kecil dari ukuran potongan</span>';
+    else if (numParts > 500) warning = `<span style="color:#da3633">⚠️ Terlalu banyak (${numParts}). Maksimal 500.</span>`;
+    else if (actualChunkSize < 1024) warning = '<span style="color:#da3633">⚠️ Potongan < 1 KB tidak disarankan</span>';
+
+    preview.style.display = 'block';
+    preview.innerHTML = `
+        <div class="row"><span class="k">Jumlah bagian</span><span class="v">${numParts} bagian</span></div>
+        <div class="row"><span class="k">Ukuran per bagian</span><span class="v">${formatSize(actualChunkSize)}</span></div>
+        <div class="row"><span class="k">Bagian terakhir</span><span class="v">${formatSize(lastPartSize)}</span></div>
+        ${warning ? '<div style="margin-top:8px;font-size:11px">' + warning + '</div>' : ''}
+    `;
+}
+
+document.getElementById('sizeValue').addEventListener('input', updatePreview);
+document.getElementById('sizeUnit').addEventListener('change', updatePreview);
+document.getElementById('countValue').addEventListener('input', updatePreview);
+
+// ═══════════════════════════════════════════════════════
+// SPLIT FILE
+// ═══════════════════════════════════════════════════════
+async function splitFile() {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) return showToast('Pilih file dulu', 'error');
+
+    // Tentukan chunk size
+    let chunkSize;
+    if (currentMode === 'size') {
+        const value = document.getElementById('sizeValue').value;
+        const unit = document.getElementById('sizeUnit').value;
+        chunkSize = unitToBytes(value, unit);
+        if (chunkSize <= 0) return showToast('Ukuran tidak valid', 'error');
+    } else {
+        const count = parseInt(document.getElementById('countValue').value);
+        if (!count || count < 2 || count > 1000) return showToast('Jumlah harus 2-1000', 'error');
+        chunkSize = Math.ceil(file.size / count);
+    }
+
+    // Validasi
+    if (chunkSize < 1) return showToast('Ukuran potongan terlalu kecil', 'error');
+    const numParts = Math.ceil(file.size / chunkSize);
+    if (numParts < 2) return showToast('File lebih kecil dari ukuran potongan', 'warning');
+    if (numParts > 500) return showToast(`Terlalu banyak: ${numParts} bagian (max 500)`, 'error');
+
+    // Bersihkan hasil sebelumnya
+    clearResults();
+
+    // Disable tombol
+    const btn = document.getElementById('btnSplit');
+    btn.disabled = true;
+    btn.innerText = '⏳ Memproses...';
+
+    // Show progress
+    const progressWrap = document.getElementById('splitProgressWrap');
+    const progressFill = document.getElementById('splitProgressFill');
+    const progressText = document.getElementById('splitProgressText');
+    progressWrap.style.display = 'block';
+
+    const results = document.getElementById('splitResults');
+    results.innerHTML = '<div class="results-header">Hasil Potongan</div>';
+
+    // Split
+    const t0 = performance.now();
+    for (let i = 0; i < numParts; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const blob = file.slice(start, end);
+
+        // Buat download link
+        const url = URL.createObjectURL(blob);
+        activeUrls.push(url);
+
+        const partNum = String(i + 1).padStart(3, '0');
+        const partName = `${file.name}.part${partNum}`;
+
+        const link = document.createElement('a');
+        link.className = 'part-link';
+        link.href = url;
+        link.download = partName;
+        link.innerHTML = `
+            <div class="left">
+                <span class="num">${partNum}</span>
+                <span class="name">${escapeHtml(partName)}</span>
+            </div>
+            <span class="size">${formatSize(blob.size)}</span>
+        `;
+        results.appendChild(link);
+
+        // Update progress
+        const percent = Math.round(((i + 1) / numParts) * 100);
+        progressFill.style.width = percent + '%';
+        progressText.innerText = `${percent}% (${i + 1} / ${numParts})`;
+
+        // Yield ke browser tiap 5 iterasi (biar UI tidak freeze)
+        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+
+    const t1 = performance.now();
+
+    // Selesai
+    btn.disabled = false;
+    btn.innerText = '✂️ Potong File';
+    document.getElementById('splitNote').style.display = 'block';
+
+    showToast(`✅ Berhasil! ${numParts} bagian dalam ${((t1 - t0) / 1000).toFixed(1)}s`, 'success');
+}
+
+function clearResults() {
+    // Revoke semua URL lama biar tidak bocor RAM
+    activeUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+    activeUrls = [];
+    document.getElementById('splitResults').innerHTML = '';
+    document.getElementById('splitNote').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// JOIN — FILE PICKER
+// ═══════════════════════════════════════════════════════
+document.getElementById('joinInput').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    // Sort natural (part1, part2, ..., part10, part11)
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    const info = document.getElementById('joinFileInfo');
+    info.style.display = 'block';
+
+    // Deteksi base name (buang .partNNN atau .NNN)
+    const baseNames = files.map(f => f.name
+        .replace(/\.part\d+$/i, '')
+        .replace(/\.\d+$/, '')
+    );
+
+    const uniqueBase = [...new Set(baseNames)];
+    const totalSize = files.reduce((s, f) => s + f.size, 0);
+
+    let rowsHtml = files.map((f, i) =>
+        `<div class="row">
+            <span class="k">${i + 1}. ${escapeHtml(f.name)}</span>
+            <span class="v">${formatSize(f.size)}</span>
+        </div>`
+    ).join('');
+
+    info.innerHTML = `
+        <div class="row"><span class="k">Total file</span><span class="v">${files.length} bagian</span></div>
+        <div class="row"><span class="k">Total ukuran</span><span class="v">${formatSize(totalSize)}</span></div>
+        <div class="row"><span class="k">Nama hasil</span><span class="v">${escapeHtml(uniqueBase[0] || 'output')}</span></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #30363d;max-height:200px;overflow-y:auto;">
+            ${rowsHtml}
+        </div>
+    `;
+
+    document.getElementById('joinPicker').querySelector('.title').innerText = `${files.length} file dipilih`;
+    document.getElementById('joinPicker').querySelector('.hint').innerText = formatSize(totalSize);
+    document.getElementById('btnJoin').disabled = files.length < 2;
+});
+
+// ═══════════════════════════════════════════════════════
+// JOIN FILES
+// ═══════════════════════════════════════════════════════
+async function joinFiles() {
+    const files = Array.from(document.getElementById('joinInput').files);
+    if (files.length < 2) return showToast('Pilih minimal 2 file', 'error');
+
+    // Sort ulang untuk keamanan
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+    // Validasi sequence
+    const partNums = [];
+    let hasMatchingSuffix = true;
+    for (const f of files) {
+        const m = f.name.match(/\.part(\d+)$/i) || f.name.match(/\.(\d+)$/);
+        if (m) partNums.push(parseInt(m[1]));
+        else hasMatchingSuffix = false;
+    }
+
+    if (hasMatchingSuffix && partNums.length === files.length) {
+        // Cek urutan 1, 2, 3, ...
+        const sorted = [...partNums].sort((a, b) => a - b);
+        const isSequential = sorted.every((n, i) => n === i + 1);
+        if (!isSequential) {
+            const missing = [];
+            for (let i = 1; i <= Math.max(...partNums); i++) {
+                if (!partNums.includes(i)) missing.push(i);
+            }
+            if (missing.length > 0) {
+                if (!confirm(`⚠️ Ada bagian yang hilang: part${missing.join(', part')}.\n\nLanjut gabung?`)) return;
+            }
+        }
+    }
+
+    // Konfirmasi
+    const baseName = files[0].name.replace(/\.part\d+$/i, '').replace(/\.\d+$/, '') || 'output';
+    const totalSize = files.reduce((s, f) => s + f.size, 0);
+    if (!confirm(`Gabung ${files.length} bagian jadi "${baseName}"?\n\nTotal: ${formatSize(totalSize)}\n\nProses ini butuh RAM ~${formatSize(totalSize)}. Pastikan HP punya cukup memori.`)) return;
+
+    // Disable tombol
+    const btn = document.getElementById('btnJoin');
+    btn.disabled = true;
+    btn.innerText = '⏳ Menggabung...';
+
+    const progressWrap = document.getElementById('joinProgressWrap');
+    const progressFill = document.getElementById('joinProgressFill');
+    const progressText = document.getElementById('joinProgressText');
+    progressWrap.style.display = 'block';
+
+    try {
+        // Gabungkan blob
+        const blobs = files.map(f => f);
+
+        // Progress simulasi (karena Blob constructor instan)
+        for (let i = 0; i <= 100; i += 20) {
+            progressFill.style.width = i + '%';
+            progressText.innerText = i + '%';
+            await new Promise(r => setTimeout(r, 30));
+        }
+
+        const resultBlob = new Blob(blobs, { type: 'application/octet-stream' });
+        progressFill.style.width = '100%';
+        progressText.innerText = '100% — Siap diunduh';
+
+        // Download otomatis
+        const url = URL.createObjectURL(resultBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = baseName || 'joined_output';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Revoke setelah delay
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch {} }, 30000);
+
+        showToast(`✅ Digabung! ${files.length} bagian → ${formatSize(resultBlob.size)}`, 'success');
+    } catch (e) {
+        console.error(e);
+        showToast('❌ Gagal gabung: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = '🔗 Gabung & Unduh';
+        setTimeout(() => { progressWrap.style.display = 'none'; }, 1500);
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// CLEANUP
+// ═══════════════════════════════════════════════════════
+window.addEventListener('beforeunload', () => {
+    activeUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch {} });
+});
+
+// ═══════════════════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('SW aktif'))
+        .catch((e) => console.warn('SW gagal:', e.message));
+}
+</script>
+
+</body>
+      </html>
